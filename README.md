@@ -3,7 +3,11 @@
 간단하게 구현하기 위해 자체 collection 기능 제거
 collection 내부에서만 거래가능하도록 구현
 
-lazyminting을 구현하는 것에 초점
+기본적으로 lazyminting을 지원
+
+거래 수수료 : 2퍼
+
+TODO: 각 컨트랙트에 대한 간단한 설명
 
 ## Quick setup
 
