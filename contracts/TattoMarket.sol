@@ -13,16 +13,20 @@ error TattoMarket_There_Is_Already_Record();
 error TattoMarket_Price_Is_Larger_Than_BalanceOf();
 error TattoMarket_Signer_Address_Does_Not_Match();
 error TattoMarket_Hash_Does_Not_Match();
+error TattoMarket_Already_Used_Hash();
 
 contract TattoMarket {
   using ECDSA for bytes32;
 
   address internal roleControlAddress;
-  address currencyControlAddress;
-  address backAddress;
+  address internal currencyControlAddress;
+  address internal backAddress;
 
   //수수료
   uint256 constant protocolPercent = 2;
+
+  // 0이면 사용하지 않음, 1이면 사용한것
+  mapping(bytes32 => uint256) internal tradeHashUsed;
 
   struct BuyerInfo {
     uint256 price;
@@ -45,10 +49,11 @@ contract TattoMarket {
     bytes mintSignature;
   }
 
-  struct BackValidateInfo {
+  //여기서 signature는 back이 한 sign이어야 한다.
+  struct TradeValidateInfo {
     uint256 random;
-    bytes32 backHash;
-    bytes backSignature;
+    bytes32 tradeHash;
+    bytes tradeSignature;
   }
 
   event BuyLazyNFT();
@@ -71,17 +76,20 @@ contract TattoMarket {
     // buyer
     BuyerInfo memory buyerInfo,
     // back
-    BackValidateInfo memory backValidateInfo
+    TradeValidateInfo memory tradeValidateInfo
   ) public payable {
+    if (tradeHashUsed[tradeValidateInfo.tradeHash] == 1) {
+      revert TattoMarket_Already_Used_Hash();
+    }
     //verify
-    _validateBackSignature(
+    _validateTradeSignature(
       lazyNFTInfo.collectionAddress,
       lazyNFTInfo.creatorAddress,
       msg.sender,
       buyerInfo.price,
-      backValidateInfo.random,
-      backValidateInfo.backHash,
-      backValidateInfo.backSignature
+      tradeValidateInfo.random,
+      tradeValidateInfo.tradeHash,
+      tradeValidateInfo.tradeSignature
     );
     _validatePaySignature(
       msg.sender,
@@ -119,6 +127,8 @@ contract TattoMarket {
       ((100 - protocolPercent) * buyerInfo.price) / 100
     );
 
+    tradeHashUsed[tradeValidateInfo.tradeHash] = 1;
+
     emit BuyLazyNFT();
   }
 
@@ -128,17 +138,20 @@ contract TattoMarket {
     // buyer
     BuyerInfo memory buyerInfo,
     // back
-    BackValidateInfo memory backValidateInfo
+    TradeValidateInfo memory tradeValidateInfo
   ) public payable {
+    if (tradeHashUsed[tradeValidateInfo.tradeHash] == 1) {
+      revert TattoMarket_Already_Used_Hash();
+    }
     //verify
-    _validateBackSignature(
+    _validateTradeSignature(
       nftInfo.collectionAddress,
       nftInfo.holderAddress,
       msg.sender,
       buyerInfo.price,
-      backValidateInfo.random,
-      backValidateInfo.backHash,
-      backValidateInfo.backSignature
+      tradeValidateInfo.random,
+      tradeValidateInfo.tradeHash,
+      tradeValidateInfo.tradeSignature
     );
     _validatePaySignature(
       msg.sender,
@@ -174,6 +187,8 @@ contract TattoMarket {
       ((100 - protocolPercent) * buyerInfo.price) / 100
     );
 
+    tradeHashUsed[tradeValidateInfo.tradeHash] = 1;
+
     emit BuyNFT();
   }
 
@@ -206,14 +221,14 @@ contract TattoMarket {
   }
 
   //같은 back signature를 이용해 중복거래를 방지하기 위해 거래에 대한 내용을 모두 포함시키고 난수값도 포함시킨다.
-  function _validateBackSignature(
+  function _validateTradeSignature(
     address collectionAddress,
     address sellerAddress,
     address buyerAddress,
     uint256 price,
     uint256 random,
-    bytes32 backHash,
-    bytes memory backSignature
+    bytes32 tradeHash,
+    bytes memory tradeSignature
   ) internal view {
     bytes32 calculatedHash = keccak256(
       abi.encodePacked(
@@ -232,9 +247,9 @@ contract TattoMarket {
         uint256(calculatedHash)
       )
     );
-    address recoveredSigner = calculatedOrigin.recover(backSignature);
+    address recoveredSigner = calculatedOrigin.recover(tradeSignature);
 
-    if (calculatedHash != backHash) {
+    if (calculatedHash != tradeHash) {
       revert TattoMarket_Hash_Does_Not_Match();
     }
     if (recoveredSigner != backAddress) {

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./interface/ITattoRole.sol";
+import "hardhat/console.sol";
 
 error TattoCurrency_Only_Admin();
 error TattoCurrency_Only_Market();
@@ -9,8 +10,6 @@ error TattoCurrency_Insufficient_Available_Funds(uint256 amount);
 
 contract TattoCurrency {
   address internal tattoRole;
-
-  uint256 private ETHTotal;
 
   mapping(address => uint256) accountBalance;
 
@@ -45,7 +44,6 @@ contract TattoCurrency {
 
   function depositETH() public payable {
     accountBalance[msg.sender] += msg.value;
-    ETHTotal += msg.value;
     emit Deposit(msg.sender, address(this), msg.value);
   }
 
@@ -57,7 +55,6 @@ contract TattoCurrency {
     }
 
     accountBalance[msg.sender] -= amount;
-    ETHTotal -= amount;
 
     payable(msg.sender).transfer(amount);
 
@@ -74,8 +71,10 @@ contract TattoCurrency {
       revert TattoCurrency_Insufficient_Available_Funds(ETHBalance);
     }
 
+    address adminAddress = ITattoRole(tattoRole).getAdminAddress();
+
     accountBalance[from] -= amount;
-    ETHTotal -= amount;
+    accountBalance[adminAddress] += amount;
 
     emit Withdraw(from, address(this), amount);
   }
@@ -95,26 +94,7 @@ contract TattoCurrency {
     emit ETHTransfer(from, to, amount);
   }
 
-  function adminWithdrawAvailableETH() external onlyAdmin {
-    uint256 totalBalance = ETHTotal;
-    uint256 realTotalBalance = address(this).balance;
-    require(
-      realTotalBalance > totalBalance,
-      "TattoCurrency : Not availale eth"
-    );
-
-    uint256 availableBalance = realTotalBalance - totalBalance;
-
-    payable(msg.sender).transfer(availableBalance);
-
-    emit Withdraw(address(this), msg.sender, availableBalance);
-  }
-
   function balanceOf(address account) public view returns (uint256) {
     return accountBalance[account];
-  }
-
-  function availableETH() external view returns (uint256) {
-    return address(this).balance - ETHTotal;
   }
 }

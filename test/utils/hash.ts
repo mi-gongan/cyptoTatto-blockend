@@ -26,3 +26,23 @@ export function payHash(buyerAddress: string, price: BigNumber) {
   );
   return hash;
 }
+
+export function tradeHash(
+  collectionAddress: string,
+  sellerAddress: string,
+  buyerAddress: string,
+  price: BigNumber,
+  random: number
+) {
+  const hash = ethers.utils.solidityKeccak256(
+    ["uint256", "uint256", "uint256", "uint256", "uint256"],
+    [
+      BigInt(collectionAddress),
+      BigInt(sellerAddress),
+      BigInt(buyerAddress),
+      price,
+      BigInt(random),
+    ]
+  );
+  return hash;
+}
