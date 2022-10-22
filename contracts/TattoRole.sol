@@ -4,13 +4,14 @@ pragma solidity ^0.8.0;
 contract TattoRole {
   address internal adminAddress;
   address internal marketAddress;
+  address internal backAddress;
 
   constructor(address _admin) {
     adminAddress = _admin;
   }
 
   modifier onlyAdmin() {
-    require(msg.sender != adminAddress, "TattoRole_Msg_Sender_Is_Not_Admin");
+    require(msg.sender == adminAddress, "TattoRole_Msg_Sender_Is_Not_Admin");
     _;
   }
 
@@ -22,11 +23,31 @@ contract TattoRole {
     return (marketAddress == _market);
   }
 
+  function isBack(address _back) public view returns (bool) {
+    return (backAddress == _back);
+  }
+
+  function getAdminAddress() public view returns (address) {
+    return adminAddress;
+  }
+
+  function getMarketAddress() public view returns (address) {
+    return marketAddress;
+  }
+
+  function getBackAddress() public view returns (address) {
+    return backAddress;
+  }
+
   function setAdminAddress(address _admin) public onlyAdmin {
     adminAddress = _admin;
   }
 
   function setMarketAddress(address _market) public onlyAdmin {
     marketAddress = _market;
+  }
+
+  function setBackAddress(address _back) public onlyAdmin {
+    backAddress = _back;
   }
 }

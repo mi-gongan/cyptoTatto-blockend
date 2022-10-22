@@ -6,6 +6,12 @@ hash를 keep하는 이유는 같은 hash로 민팅을 방지하기 위해서 = �
 
 기본적으로 lazyminting을 지원
 
+백에서 모든 거래에 대해서 event listening을 하고 있을 수 없으니 서명은 무조건 백이 하는걸로 해서 불필요한 리소스 낭비를 방지한다.
+
+### Role
+
+admin, market, back 의 각 role을 관리하기 위한 contarct
+
 ### Market
 
 buyLazyNFT
@@ -65,6 +71,6 @@ create할때 creator가 signer, 추후에 민팅/거래시 검증
 2. npm run deploy scripts/TattoRole.deploy.ts
 3. add ROLE_ADDRESS to .env
 4. npm run deploy scripts/TattoCurrency.deploy.ts
-5. add CURRENCY_ADDRESS to .env
+5. add CURRENCY_ADDRESS,BACK_ADDRESS to .env
 6. npm run deploy scripts/TattoMarket.deploy.ts
 7. npm run deploy scripts/TattoCollection.deploy.ts

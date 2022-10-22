@@ -16,7 +16,8 @@ contract TattoCollection is ERC721, ITattoCollection {
   using ECDSA for bytes32;
 
   uint256 internal lastTokenId;
-  address internal tattoRole;
+  address internal roleControlAddress;
+  address internal backAddress;
 
   mapping(uint256 => string) public tokenIPFSHash;
   // 0이면 사용하지 않음, 1이면 사용한것
@@ -26,10 +27,14 @@ contract TattoCollection is ERC721, ITattoCollection {
 
   event Burn(uint256 tokenId, string tokenIPFSHash);
 
-  constructor(address _role) ERC721("TattoCollection", "TATTO") {
-    tattoRole = _role;
+  constructor(address _role, address _backAddress)
+    ERC721("TattoCollection", "TATTO")
+  {
+    roleControlAddress = _role;
+    backAddress = _backAddress;
   }
 
+  //signature는 백에서 생성된 것이어야만 한다.
   function lazyMint(
     address creatorAddress,
     address receiverAddress,
@@ -111,7 +116,7 @@ contract TattoCollection is ERC721, ITattoCollection {
       revert TattoCollection_Hash_Does_Not_Match(calculatedHash);
     }
 
-    if (recoveredSigner != creatorAddress) {
+    if (recoveredSigner != backAddress) {
       revert TattoCollection_Signer_Address_Does_Not_Match(recoveredSigner);
     }
   }

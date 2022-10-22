@@ -14,11 +14,11 @@ contract TattoCurrency {
 
   mapping(address => uint256) accountBalance;
 
-  event ETHTransfered(address indexed from, address indexed to, uint256 amount);
+  event ETHTransfer(address from, address to, uint256 amount);
 
-  event Withdrawn(address indexed from, address indexed to, uint256 amount);
+  event Withdraw(address from, address to, uint256 amount);
 
-  event Deposit(address indexed from, address indexed to, uint256 amount);
+  event Deposit(address from, address to, uint256 amount);
 
   modifier onlyAdmin() {
     if (!ITattoRole(tattoRole).isAdmin(msg.sender)) {
@@ -40,17 +40,13 @@ contract TattoCurrency {
   }
 
   receive() external payable {
-    depositETHFor(msg.sender);
+    depositETH();
   }
 
   function depositETH() public payable {
-    depositETHFor(msg.sender);
-  }
-
-  function depositETHFor(address account) public payable {
-    accountBalance[account] += msg.value;
+    accountBalance[msg.sender] += msg.value;
     ETHTotal += msg.value;
-    emit Deposit(msg.sender, account, msg.value);
+    emit Deposit(msg.sender, address(this), msg.value);
   }
 
   function withdrawETH(uint256 amount) public {
@@ -65,7 +61,7 @@ contract TattoCurrency {
 
     payable(msg.sender).transfer(amount);
 
-    emit Withdrawn(msg.sender, msg.sender, amount);
+    emit Withdraw(address(this), msg.sender, amount);
   }
 
   //protocol fee만큼 감소시키는 함수
@@ -81,7 +77,7 @@ contract TattoCurrency {
     accountBalance[from] -= amount;
     ETHTotal -= amount;
 
-    emit Withdrawn(from, address(this), amount);
+    emit Withdraw(from, address(this), amount);
   }
 
   function transferETHFrom(
@@ -96,7 +92,7 @@ contract TattoCurrency {
     accountBalance[from] -= amount;
     accountBalance[to] += amount;
 
-    emit ETHTransfered(from, to, amount);
+    emit ETHTransfer(from, to, amount);
   }
 
   function adminWithdrawAvailableETH() external onlyAdmin {
@@ -111,7 +107,7 @@ contract TattoCurrency {
 
     payable(msg.sender).transfer(availableBalance);
 
-    emit Withdrawn(address(this), msg.sender, availableBalance);
+    emit Withdraw(address(this), msg.sender, availableBalance);
   }
 
   function balanceOf(address account) public view returns (uint256) {

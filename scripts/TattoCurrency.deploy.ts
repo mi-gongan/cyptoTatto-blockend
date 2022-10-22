@@ -1,8 +1,8 @@
 import { ethers } from "hardhat";
 
-async function currencyControlDeploy(_role: string) {
+async function currencyControlDeploy(roleAddress: string) {
   const currencyToken = await ethers.getContractFactory("TattoCurrency");
-  const TattoCurrency = await currencyToken.deploy(_role);
+  const TattoCurrency = await currencyToken.deploy(roleAddress);
   await TattoCurrency.deployed();
 
   console.log("TattoCurrency address:", TattoCurrency.address);

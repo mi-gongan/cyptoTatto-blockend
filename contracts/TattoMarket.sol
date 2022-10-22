@@ -17,7 +17,9 @@ error TattoMarket_Hash_Does_Not_Match();
 contract TattoMarket {
   using ECDSA for bytes32;
 
-  address internal currencyControlAddress;
+  address internal roleControlAddress;
+  address currencyControlAddress;
+  address backAddress;
 
   //수수료
   uint256 constant protocolPercent = 2;
@@ -37,27 +39,50 @@ contract TattoMarket {
   struct LazyNFTInfo {
     address collectionAddress;
     address creatorAddress;
-    //아래는 민팅을 해야하기 때문에 필요한 정보들
+    // 아래는 민팅을 하기위해 필요한 정보들
     string ipfsHash;
     bytes32 mintHash;
     bytes mintSignature;
+  }
+
+  struct BackValidateInfo {
+    uint256 random;
+    bytes32 backHash;
+    bytes backSignature;
   }
 
   event BuyLazyNFT();
 
   event BuyNFT();
 
-  constructor(address _currencyControlAddress) {
+  constructor(
+    address _role,
+    address _currencyControlAddress,
+    address _backAddress
+  ) {
+    roleControlAddress = _role;
     currencyControlAddress = _currencyControlAddress;
+    backAddress = _backAddress;
   }
 
   function buyLazyNFT(
     // seller
     LazyNFTInfo memory lazyNFTInfo,
     // buyer
-    BuyerInfo memory buyerInfo
+    BuyerInfo memory buyerInfo,
+    // back
+    BackValidateInfo memory backValidateInfo
   ) public payable {
     //verify
+    _validateBackSignature(
+      lazyNFTInfo.collectionAddress,
+      lazyNFTInfo.creatorAddress,
+      msg.sender,
+      buyerInfo.price,
+      backValidateInfo.random,
+      backValidateInfo.backHash,
+      backValidateInfo.backSignature
+    );
     _validatePaySignature(
       msg.sender,
       buyerInfo.price,
@@ -101,9 +126,20 @@ contract TattoMarket {
     //seller
     NFTInfo memory nftInfo,
     // buyer
-    BuyerInfo memory buyerInfo
+    BuyerInfo memory buyerInfo,
+    // back
+    BackValidateInfo memory backValidateInfo
   ) public payable {
     //verify
+    _validateBackSignature(
+      nftInfo.collectionAddress,
+      nftInfo.holderAddress,
+      msg.sender,
+      buyerInfo.price,
+      backValidateInfo.random,
+      backValidateInfo.backHash,
+      backValidateInfo.backSignature
+    );
     _validatePaySignature(
       msg.sender,
       buyerInfo.price,
@@ -141,7 +177,7 @@ contract TattoMarket {
     emit BuyNFT();
   }
 
-  // 본인이 구매한것인이 그 가격에 대해 서명했는지를 verify
+  // 구매 정보에 대한 정보가 맞는지 buyer가 서명한건지 체크
   function _validatePaySignature(
     address buyer,
     uint256 price,
@@ -149,7 +185,7 @@ contract TattoMarket {
     bytes memory paySignature
   ) internal pure {
     bytes32 calculatedHash = keccak256(
-      abi.encodePacked(uint256(uint160(buyer)), price)
+      abi.encodePacked(uint256(uint160(buyer)), uint256(price))
     );
     bytes32 calculatedOrigin = keccak256(
       abi.encodePacked(
@@ -165,6 +201,43 @@ contract TattoMarket {
       revert TattoMarket_Hash_Does_Not_Match();
     }
     if (recoveredSigner != buyer) {
+      revert TattoMarket_Signer_Address_Does_Not_Match();
+    }
+  }
+
+  //같은 back signature를 이용해 중복거래를 방지하기 위해 거래에 대한 내용을 모두 포함시키고 난수값도 포함시킨다.
+  function _validateBackSignature(
+    address collectionAddress,
+    address sellerAddress,
+    address buyerAddress,
+    uint256 price,
+    uint256 random,
+    bytes32 backHash,
+    bytes memory backSignature
+  ) internal view {
+    bytes32 calculatedHash = keccak256(
+      abi.encodePacked(
+        uint256(uint160(collectionAddress)),
+        uint256(uint160(sellerAddress)),
+        uint256(uint160(buyerAddress)),
+        uint256(price),
+        uint256(random)
+      )
+    );
+    bytes32 calculatedOrigin = keccak256(
+      abi.encodePacked(
+        //ethereum signature prefix
+        "\x19Ethereum Signed Message:\n32",
+        //Orderer
+        uint256(calculatedHash)
+      )
+    );
+    address recoveredSigner = calculatedOrigin.recover(backSignature);
+
+    if (calculatedHash != backHash) {
+      revert TattoMarket_Hash_Does_Not_Match();
+    }
+    if (recoveredSigner != backAddress) {
       revert TattoMarket_Signer_Address_Does_Not_Match();
     }
   }
