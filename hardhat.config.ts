@@ -17,10 +17,10 @@ const config: HardhatUserConfig = {
   },
   defaultNetwork: "hardhat",
   networks: {
-    // goerli: {
-    //   url: `https://eth-goerli.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-    //   accounts: [GOERLI_PRIVATE_KEY || ""],
-    // },
+    goerli: {
+      url: `https://eth-goerli.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: [process.env.GOERLI_PRIVATE_KEY || ""],
+    },
   },
   gasReporter: {
     currency: "USD",

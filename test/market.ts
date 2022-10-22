@@ -27,18 +27,14 @@ describe("market", function () {
     const marketyToken = await ethers.getContractFactory("TattoMarket");
     const TattoMarket = await marketyToken.deploy(
       TattoRole.address,
-      TattoCurrency.address,
-      back.address
+      TattoCurrency.address
     );
     await TattoMarket.deployed();
 
     await TattoRole.connect(admin).setMarketAddress(TattoMarket.address);
 
     const collectionToken = await ethers.getContractFactory("TattoCollection");
-    const TattoCollection = await collectionToken.deploy(
-      TattoRole.address,
-      back.address
-    );
+    const TattoCollection = await collectionToken.deploy(TattoRole.address);
     await TattoCollection.deployed();
 
     return {
@@ -96,7 +92,7 @@ describe("market", function () {
           mintSignature,
         ],
         [price, payHashValue, paySignature],
-        [randomHere, tradeHashValue, tradeSignature]
+        [randomHere, back.address, tradeHashValue, tradeSignature]
       )
     ).to.emit(TattoMarket, "BuyLazyNFT");
 
@@ -127,6 +123,7 @@ describe("market", function () {
       seller.address,
       seller.address,
       ipfsHash,
+      back.address,
       mintHash,
       mintSignature
     );
@@ -156,7 +153,7 @@ describe("market", function () {
       TattoMarket.connect(buyer).buyNFT(
         [TattoCollection.address, seller.address, 1],
         [price, payHashValue, paySignature],
-        [randomHere, tradeHashValue, tradeSignature]
+        [randomHere, back.address, tradeHashValue, tradeSignature]
       )
     ).to.emit(TattoMarket, "BuyNFT");
 

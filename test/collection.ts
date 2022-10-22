@@ -21,10 +21,7 @@ describe("collection", function () {
     await TattoRole.connect(admin).setBackAddress(back.address);
 
     const collectionToken = await ethers.getContractFactory("TattoCollection");
-    const TattoCollection = await collectionToken.deploy(
-      TattoRole.address,
-      back.address
-    );
+    const TattoCollection = await collectionToken.deploy(TattoRole.address);
     await TattoCollection.deployed();
 
     return { admin, user1, user2, back, TattoRole, TattoCollection };
@@ -47,6 +44,7 @@ describe("collection", function () {
         user1.address,
         user1.address,
         ipfsHash,
+        back.address,
         hash,
         signature
       )
@@ -73,6 +71,7 @@ describe("collection", function () {
         user1.address,
         user2.address,
         ipfsHash,
+        back.address,
         hash,
         signature
       )
@@ -100,6 +99,7 @@ describe("collection", function () {
       user1.address,
       user2.address,
       ipfsHash,
+      back.address,
       hash,
       signature
     );
@@ -108,6 +108,7 @@ describe("collection", function () {
         user1.address,
         user2.address,
         ipfsHash,
+        back.address,
         hash,
         signature
       )
@@ -141,6 +142,7 @@ describe("collection", function () {
         user1.address,
         user2.address,
         ipfsHash,
+        back.address,
         wrongHash,
         signature
       )
@@ -168,6 +170,7 @@ describe("collection", function () {
         user1.address,
         user2.address,
         ipfsHash,
+        back.address,
         hash,
         wrongSignature
       )
@@ -195,6 +198,7 @@ describe("collection", function () {
         user1.address,
         user1.address,
         ipfsHash,
+        back.address,
         hash,
         signature
       )
@@ -234,6 +238,7 @@ describe("collection", function () {
         user1.address,
         user1.address,
         ipfsHash,
+        back.address,
         hash,
         signature
       )

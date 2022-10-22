@@ -8,9 +8,9 @@ interface ITattoRole {
 
   function isMarket(address _market) external returns (bool);
 
-  function getAdminAddress() external returns (address);
+  function getAdminAddress() external view returns (address);
 
-  function getMarketAddress() external returns (address);
+  function getMarketAddress() external view returns (address);
 
-  function getBackAddress() external returns (address);
+  function getBackAddress() external view returns (address);
 }

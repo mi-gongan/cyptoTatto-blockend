@@ -1,16 +1,8 @@
 import { ethers } from "hardhat";
 
-async function marketDeploy(
-  roleAddress: string,
-  currencyAddress: string,
-  backAddress: string
-) {
+async function marketDeploy(roleAddress: string, currencyAddress: string) {
   const marketToken = await ethers.getContractFactory("TattoMarket");
-  const TattoMarket = await marketToken.deploy(
-    roleAddress,
-    currencyAddress,
-    backAddress
-  );
+  const TattoMarket = await marketToken.deploy(roleAddress, currencyAddress);
   await TattoMarket.deployed();
 
   console.log("TattoMarket address:", TattoMarket.address);
@@ -18,11 +10,7 @@ async function marketDeploy(
 }
 
 async function main() {
-  await marketDeploy(
-    process.env.ROLE_ADDRESS,
-    process.env.CURRENCY_ADDRESS,
-    process.env.BACK_ADDRESS
-  );
+  await marketDeploy(process.env.ROLE_ADDRESS, process.env.CURRENCY_ADDRESS);
 }
 
 main().catch((error) => {

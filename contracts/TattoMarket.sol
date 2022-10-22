@@ -20,7 +20,6 @@ contract TattoMarket {
 
   address internal roleControlAddress;
   address internal currencyControlAddress;
-  address internal backAddress;
 
   //수수료
   uint256 constant protocolPercent = 2;
@@ -52,6 +51,7 @@ contract TattoMarket {
   //여기서 signature는 back이 한 sign이어야 한다.
   struct TradeValidateInfo {
     uint256 random;
+    address backAddress;
     bytes32 tradeHash;
     bytes tradeSignature;
   }
@@ -60,14 +60,9 @@ contract TattoMarket {
 
   event BuyNFT();
 
-  constructor(
-    address _role,
-    address _currencyControlAddress,
-    address _backAddress
-  ) {
+  constructor(address _role, address _currencyControlAddress) {
     roleControlAddress = _role;
     currencyControlAddress = _currencyControlAddress;
-    backAddress = _backAddress;
   }
 
   function buyLazyNFT(
@@ -88,6 +83,7 @@ contract TattoMarket {
       msg.sender,
       buyerInfo.price,
       tradeValidateInfo.random,
+      tradeValidateInfo.backAddress,
       tradeValidateInfo.tradeHash,
       tradeValidateInfo.tradeSignature
     );
@@ -103,6 +99,7 @@ contract TattoMarket {
       lazyNFTInfo.creatorAddress,
       msg.sender,
       lazyNFTInfo.ipfsHash,
+      tradeValidateInfo.backAddress,
       lazyNFTInfo.mintHash,
       lazyNFTInfo.mintSignature
     );
@@ -150,6 +147,7 @@ contract TattoMarket {
       msg.sender,
       buyerInfo.price,
       tradeValidateInfo.random,
+      tradeValidateInfo.backAddress,
       tradeValidateInfo.tradeHash,
       tradeValidateInfo.tradeSignature
     );
@@ -227,9 +225,10 @@ contract TattoMarket {
     address buyerAddress,
     uint256 price,
     uint256 random,
+    address backAddress,
     bytes32 tradeHash,
     bytes memory tradeSignature
-  ) internal view {
+  ) internal pure {
     bytes32 calculatedHash = keccak256(
       abi.encodePacked(
         uint256(uint160(collectionAddress)),

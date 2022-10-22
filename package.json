@@ -3,7 +3,8 @@
   "scripts": {
     "test": "npx hardhat test",
     "test:gas": "REPORT_GAS=true npx hardhat test",
-    "deploy": "npx hardhat run --network goerli"
+    "deploy": "npx hardhat run --network goerli",
+    "abi": "npx hardhat export-abi"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.4",

@@ -73,6 +73,14 @@ create할때 creator가 signer, 추후에 민팅/거래시 검증
 2. npm run deploy scripts/TattoRole.deploy.ts
 3. add ROLE_ADDRESS to .env
 4. npm run deploy scripts/TattoCurrency.deploy.ts
-5. add CURRENCY_ADDRESS,BACK_ADDRESS to .env
+5. add CURRENCY_ADDRESS to .env
 6. npm run deploy scripts/TattoMarket.deploy.ts
 7. npm run deploy scripts/TattoCollection.deploy.ts
+
+## deploy address
+
+admin address : "0xE976893Bf88F6CC81ae942cE9531fBebd8530D81"
+TattoRole address : "0x94476c2E4813490404D79056B8127104e2Fa00ad"
+TattoCurrency address : "0xA9fe913C2B58Ecb979382212c2DaB05012163153"
+TattoMarket address : 0x63A339D0C4a1fE38abBB182F778d04CD30087330
+TattoCollection address : "0x26ABac55dE5cED6608E742aed540215dCb576301"
