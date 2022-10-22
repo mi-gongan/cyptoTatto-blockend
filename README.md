@@ -1,4 +1,4 @@
-## blockend
+## tatto smart contract
 
 간단하게 구현하기 위해 자체 collection 기능 제거
 
@@ -20,6 +20,10 @@ buyer가 signer
 ### collection
 
 create할때 creator가 signer, 추후에 민팅/거래시 검증
+
+### test
+
+모든 error 케이스에 대한 엄격한 test를 함
 
 ## Quick setup
 

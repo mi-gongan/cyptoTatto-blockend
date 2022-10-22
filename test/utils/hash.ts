@@ -1,7 +1,7 @@
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
-function lazyMintHash(
+export function lazyMintHash(
   collectionAddress: string,
   creatorAddress: string,
   receiverAddress: string,
@@ -19,7 +19,7 @@ function lazyMintHash(
   return hash;
 }
 
-function payHash(buyerAddress: string, price: BigNumber) {
+export function payHash(buyerAddress: string, price: BigNumber) {
   const hash = ethers.utils.solidityKeccak256(
     ["uint256", "uint256"],
     [BigInt(buyerAddress), price]

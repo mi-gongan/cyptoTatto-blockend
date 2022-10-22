@@ -3,22 +3,8 @@ pragma solidity ^0.8.0;
 
 import "./interface/ITattoRole.sol";
 
-error TattoCurrency_Core_Should_Be_Contract();
-
-error TattoCurrency_Currency_Not_Allowed();
-error TattoCurrency_Address_Not_Allowed();
-
-error TattoCurrency_Cannot_Deposit_To_Address_Zero();
-error TattoCurrency_Cannot_Deposit_To_Contract();
-error TattoCurrency_Cannot_Deposit_Zero_Amount();
-error TattoCurrency_Not_Approved();
-
-error TattoCurrency_Cannot_Withdraw_To_Address_Zero();
-error TattoCurrency_Cannot_Withdraw_To_Contract();
-error TattoCurrency_Cannot_Withdraw_Zero_Amount();
-error TattoCurrency_No_Funds_To_Withdraw();
-
-error TattoCurrency_Insufficient_Allowance(uint256 amount);
+error TattoCurrency_Only_Admin();
+error TattoCurrency_Only_Market();
 error TattoCurrency_Insufficient_Available_Funds(uint256 amount);
 
 contract TattoCurrency {
@@ -36,17 +22,15 @@ contract TattoCurrency {
 
   modifier onlyAdmin() {
     if (!ITattoRole(tattoRole).isAdmin(msg.sender)) {
-      revert TattoCurrency_Address_Not_Allowed();
+      revert TattoCurrency_Only_Admin();
     }
     _;
   }
 
-  modifier marketOrAdmin() {
-    if (
-      !ITattoRole(tattoRole).isMarket(msg.sender) ||
-      !ITattoRole(tattoRole).isAdmin(msg.sender)
-    ) {
-      revert TattoCurrency_Address_Not_Allowed();
+  //market에서만 가능하도록
+  modifier onlyMarket() {
+    if (!ITattoRole(tattoRole).isMarket(msg.sender)) {
+      revert TattoCurrency_Only_Market();
     }
     _;
   }
@@ -64,15 +48,6 @@ contract TattoCurrency {
   }
 
   function depositETHFor(address account) public payable {
-    if (msg.value == 0) {
-      revert TattoCurrency_Cannot_Deposit_Zero_Amount();
-    }
-    if (account == address(0)) {
-      revert TattoCurrency_Cannot_Deposit_To_Address_Zero();
-    }
-    if (account == address(this)) {
-      revert TattoCurrency_Cannot_Deposit_To_Contract();
-    }
     accountBalance[account] += msg.value;
     ETHTotal += msg.value;
     emit Deposit(msg.sender, account, msg.value);
@@ -80,17 +55,9 @@ contract TattoCurrency {
 
   function withdrawETH(uint256 amount) public {
     uint256 ETHBalance = accountBalance[msg.sender];
-    if (amount == 0) {
-      revert TattoCurrency_Cannot_Withdraw_Zero_Amount();
-    }
+
     if (ETHBalance < amount) {
       revert TattoCurrency_Insufficient_Available_Funds(ETHBalance);
-    }
-    if (msg.sender == address(0)) {
-      revert TattoCurrency_Cannot_Withdraw_To_Address_Zero();
-    }
-    if (msg.sender == address(this)) {
-      revert TattoCurrency_Cannot_Withdraw_To_Contract();
     }
 
     accountBalance[msg.sender] -= amount;
@@ -101,9 +68,10 @@ contract TattoCurrency {
     emit Withdrawn(msg.sender, msg.sender, amount);
   }
 
+  //protocol fee만큼 감소시키는 함수
   function reduceCurrencyFrom(address from, uint256 amount)
     external
-    marketOrAdmin
+    onlyMarket
   {
     uint256 ETHBalance = accountBalance[from];
     if (ETHBalance < amount) {
@@ -120,17 +88,7 @@ contract TattoCurrency {
     address from,
     address to,
     uint256 amount
-  ) external marketOrAdmin {
-    if (amount == 0) {
-      revert TattoCurrency_Cannot_Withdraw_Zero_Amount();
-    }
-    if (to == address(0)) {
-      revert TattoCurrency_Cannot_Withdraw_To_Address_Zero();
-    }
-    if (to == address(this)) {
-      revert TattoCurrency_Cannot_Withdraw_To_Contract();
-    }
-
+  ) external onlyMarket {
     uint256 ETHBalance = accountBalance[from];
     if (ETHBalance < amount) {
       revert TattoCurrency_Insufficient_Available_Funds(ETHBalance);
@@ -146,7 +104,7 @@ contract TattoCurrency {
     uint256 realTotalBalance = address(this).balance;
     require(
       realTotalBalance > totalBalance,
-      "TattoCurrency : Not enough balance"
+      "TattoCurrency : Not availale eth"
     );
 
     uint256 availableBalance = realTotalBalance - totalBalance;

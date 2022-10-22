@@ -6,6 +6,7 @@
     "deploy": "npx hardhat run --network goerli"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.4",
     "@nomicfoundation/hardhat-toolbox": "^2.0.0",
     "@types/chai": "^4.3.3",
     "@types/node": "^18.11.3",

@@ -6,10 +6,11 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "./interface/ITattoCollection.sol";
 import "./interface/ITattoRole.sol";
+import "hardhat/console.sol";
 
-error TattoCollection_Hash_Does_Not_Match();
-error TattoCollection_Signer_Address_Does_Not_Match();
-error TattoCollection_Same_IPFSHash();
+error TattoCollection_Same_IPFSHash(string ipfsHash);
+error TattoCollection_Hash_Does_Not_Match(bytes32 calculatedHash);
+error TattoCollection_Signer_Address_Does_Not_Match(address calculatedSigner);
 
 contract TattoCollection is ERC721, ITattoCollection {
   using ECDSA for bytes32;
@@ -18,16 +19,12 @@ contract TattoCollection is ERC721, ITattoCollection {
   address internal tattoRole;
 
   mapping(uint256 => string) public tokenIPFSHash;
-  // 0이면 사용하지 않음, 1이면 사용
+  // 0이면 사용하지 않음, 1이면 사용한것
   mapping(string => uint256) internal ipfsHashUsed;
 
-  event Minted(
-    address indexed creator,
-    uint256 indexed tokenId,
-    string tokenIPFSHash
-  );
+  event Mint(address receiverAddress, uint256 tokenId, string tokenIPFSHash);
 
-  event Burn(uint256 tokenId);
+  event Burn(uint256 tokenId, string tokenIPFSHash);
 
   constructor(address _role) ERC721("TattoCollection", "TATTO") {
     tattoRole = _role;
@@ -41,7 +38,7 @@ contract TattoCollection is ERC721, ITattoCollection {
     bytes memory mintSignature
   ) public override returns (uint256 tokenId) {
     if (ipfsHashUsed[ipfsHash] == 1) {
-      revert TattoCollection_Same_IPFSHash();
+      revert TattoCollection_Same_IPFSHash(ipfsHash);
     }
     _validateLazyMintSignature(
       creatorAddress,
@@ -55,29 +52,31 @@ contract TattoCollection is ERC721, ITattoCollection {
       // Number of tokens cannot overflow 256 bits.
       tokenId = ++lastTokenId;
     }
+
     _mint(receiverAddress, tokenId);
     _setTokenIPFSHash(tokenId, ipfsHash);
 
     ipfsHashUsed[ipfsHash] = 1;
 
-    emit Minted(receiverAddress, tokenId, ipfsHash);
+    emit Mint(receiverAddress, tokenId, ipfsHash);
   }
 
   function burn(uint256 tokenId) public {
+    string memory ipfsHash = getIPFSHashById(tokenId);
     _burn(tokenId);
-    emit Burn(tokenId);
+    emit Burn(tokenId, ipfsHash);
   }
 
   function getIPFSHashById(uint256 tokenId)
     public
     view
-    returns (string memory IPFSHash)
+    returns (string memory ipfsHash)
   {
     require(
       _exists(tokenId),
       "TattoCollection_Hash_URIQuery_For_Non_Existent_Token"
     );
-    IPFSHash = tokenIPFSHash[tokenId];
+    ipfsHash = tokenIPFSHash[tokenId];
   }
 
   function _setTokenIPFSHash(uint256 tokenId, string memory ipfsHash) internal {
@@ -109,11 +108,11 @@ contract TattoCollection is ERC721, ITattoCollection {
     address recoveredSigner = calculatedSignature.recover(mintSignature);
 
     if (calculatedHash != mintHash) {
-      revert TattoCollection_Hash_Does_Not_Match();
+      revert TattoCollection_Hash_Does_Not_Match(calculatedHash);
     }
 
     if (recoveredSigner != creatorAddress) {
-      revert TattoCollection_Signer_Address_Does_Not_Match();
+      revert TattoCollection_Signer_Address_Does_Not_Match(recoveredSigner);
     }
   }
 

@@ -8,7 +8,7 @@ describe("currency", function () {
     const [admin, user] = await ethers.getSigners();
 
     const roleToken = await ethers.getContractFactory("TattoRole");
-    const TattoRole = await roleToken.deploy(admin);
+    const TattoRole = await roleToken.deploy(admin.address);
     await TattoRole.deployed();
 
     const currencyToken = await ethers.getContractFactory("TattoCurrency");
