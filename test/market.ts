@@ -5,7 +5,7 @@ import "@nomicfoundation/hardhat-chai-matchers";
 
 describe("market", function () {
   async function deployMarket() {
-    const [admin, user] = await ethers.getSigners();
+    const [admin, seller, buyer] = await ethers.getSigners();
 
     const roleToken = await ethers.getContractFactory("TattoRole");
     const TattoRole = await roleToken.deploy(admin);
@@ -16,13 +16,22 @@ describe("market", function () {
     await TattoCurrency.deployed();
 
     const marketyToken = await ethers.getContractFactory("TattoMarket");
-    const TattoMarket = await marketyToken.deploy(
-      TattoRole.address,
-      TattoCurrency.address
-    );
+    const TattoMarket = await marketyToken.deploy(TattoCurrency.address);
     await TattoMarket.deployed();
 
-    return { admin, user, TattoRole, TattoCurrency, TattoMarket };
+    const collectionToken = await ethers.getContractFactory("TattoCollection");
+    const TattoCollection = await collectionToken.deploy(TattoRole.address);
+    await TattoCollection.deployed();
+
+    return {
+      admin,
+      seller,
+      buyer,
+      TattoRole,
+      TattoCurrency,
+      TattoMarket,
+      TattoCollection,
+    };
   }
 
   it("buy lazyNFT", async function () {

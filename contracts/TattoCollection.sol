@@ -9,7 +9,7 @@ import "./interface/ITattoRole.sol";
 
 error TattoCollection_Hash_Does_Not_Match();
 error TattoCollection_Signer_Address_Does_Not_Match();
-error TattoCollection_Signer_Is_Not_Node();
+error TattoCollection_Same_IPFSHash();
 
 contract TattoCollection is ERC721, ITattoCollection {
   using ECDSA for bytes32;
@@ -17,15 +17,14 @@ contract TattoCollection is ERC721, ITattoCollection {
   uint256 internal lastTokenId;
   address internal tattoRole;
 
-  mapping(bytes32 => bool) public mintHashHistory;
   mapping(uint256 => string) public tokenIPFSHash;
-  mapping(uint256 => address) public tokenCreator;
+  // 0이면 사용하지 않음, 1이면 사용
+  mapping(string => uint256) internal ipfsHashUsed;
 
   event Minted(
     address indexed creator,
     uint256 indexed tokenId,
-    string tokenIPFSHash,
-    bytes32 mintHash
+    string tokenIPFSHash
   );
 
   event Burn(uint256 tokenId);
@@ -34,28 +33,22 @@ contract TattoCollection is ERC721, ITattoCollection {
     tattoRole = _role;
   }
 
-  function burn(uint256 tokenId) public {
-    _burn(tokenId);
-    emit Burn(tokenId);
-  }
-
   function lazyMint(
-    address signerAddress,
-    bytes memory mintSignature,
-    bytes32 mintHash,
     address creatorAddress,
     address receiverAddress,
-    string memory ipfsHash
+    string memory ipfsHash,
+    bytes32 mintHash,
+    bytes memory mintSignature
   ) public override returns (uint256 tokenId) {
-    require(!mintHashHistory[mintHash], "TattoCollection_Hash_Is_Duplicated");
-
-    _validateMintSignature(
-      signerAddress,
-      mintSignature,
-      mintHash,
+    if (ipfsHashUsed[ipfsHash] == 1) {
+      revert TattoCollection_Same_IPFSHash();
+    }
+    _validateLazyMintSignature(
       creatorAddress,
       receiverAddress,
-      ipfsHash
+      ipfsHash,
+      mintHash,
+      mintSignature
     );
 
     unchecked {
@@ -65,30 +58,14 @@ contract TattoCollection is ERC721, ITattoCollection {
     _mint(receiverAddress, tokenId);
     _setTokenIPFSHash(tokenId, ipfsHash);
 
-    mintHashHistory[mintHash] = true;
+    ipfsHashUsed[ipfsHash] = 1;
 
-    emit Minted(receiverAddress, tokenId, ipfsHash, mintHash);
+    emit Minted(receiverAddress, tokenId, ipfsHash);
   }
 
-  function orderMint(
-    bytes32 mintHash,
-    address creatorAddress,
-    address receiverAddress,
-    string memory ipfsHash
-  ) public override returns (uint256 tokenId) {
-    require(!mintHashHistory[mintHash], "TattoCollection_Hash_Is_Duplicated");
-
-    unchecked {
-      // Number of tokens cannot overflow 256 bits.
-      tokenId = ++lastTokenId;
-    }
-    _mint(receiverAddress, tokenId);
-    _setTokenIPFSHash(tokenId, ipfsHash);
-    _setTokenCreator(tokenId, creatorAddress);
-
-    mintHashHistory[mintHash] = true;
-
-    emit Minted(receiverAddress, tokenId, ipfsHash, mintHash);
+  function burn(uint256 tokenId) public {
+    _burn(tokenId);
+    emit Burn(tokenId);
   }
 
   function getIPFSHashById(uint256 tokenId)
@@ -107,22 +84,13 @@ contract TattoCollection is ERC721, ITattoCollection {
     tokenIPFSHash[tokenId] = ipfsHash;
   }
 
-  function _setTokenCreator(uint256 tokenId, address creator) internal {
-    tokenCreator[tokenId] = creator;
-  }
-
-  function _validateMintSignature(
-    address signerAddress,
-    bytes memory mintSignature,
-    bytes32 mintHash,
+  function _validateLazyMintSignature(
     address creatorAddress,
     address receiverAddress,
-    string memory ipfsHash
+    string memory ipfsHash,
+    bytes32 mintHash,
+    bytes memory mintSignature
   ) internal view {
-    if (!ITattoRole(tattoRole).isBack(signerAddress)) {
-      revert TattoCollection_Signer_Is_Not_Node();
-    }
-
     bytes32 calculatedHash = keccak256(
       abi.encodePacked(
         uint256(uint160(address(this))),
@@ -144,7 +112,7 @@ contract TattoCollection is ERC721, ITattoCollection {
       revert TattoCollection_Hash_Does_Not_Match();
     }
 
-    if (recoveredSigner != signerAddress) {
+    if (recoveredSigner != creatorAddress) {
       revert TattoCollection_Signer_Address_Does_Not_Match();
     }
   }

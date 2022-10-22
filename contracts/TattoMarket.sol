@@ -17,175 +17,139 @@ error TattoMarket_Hash_Does_Not_Match();
 contract TattoMarket {
   using ECDSA for bytes32;
 
+  address internal currencyControlAddress;
+
   //수수료
   uint256 constant protocolPercent = 2;
 
-  mapping(bytes32 => bool) public orderRecord;
-
-  address internal tattoRole;
-  address internal currencyControlAddress;
-
-  struct ValidateInfo {
-    bytes32 hashValue;
-    bytes signature;
+  struct BuyerInfo {
+    uint256 price;
+    bytes32 payHash;
+    bytes paySignature;
   }
 
   struct NFTInfo {
-    address account;
     address collectionAddress;
+    address holderAddress;
     uint256 tokenId;
   }
 
   struct LazyNFTInfo {
     address collectionAddress;
     address creatorAddress;
+    //아래는 민팅을 해야하기 때문에 필요한 정보들
     string ipfsHash;
-    bytes32 hashValue;
+    bytes32 mintHash;
+    bytes mintSignature;
   }
 
-  event BuyLazyNFT(uint256 tokenId);
+  event BuyLazyNFT();
 
   event BuyNFT();
 
-  constructor(address _role, address _currencyControlAddress) {
-    tattoRole = _role;
+  constructor(address _currencyControlAddress) {
     currencyControlAddress = _currencyControlAddress;
   }
 
-  //msg.sender이 구매자
   function buyLazyNFT(
-    address singerAddress,
-    uint256 price,
-    //nft Info
+    // seller
     LazyNFTInfo memory lazyNFTInfo,
-    // valdate info
-    ValidateInfo memory buyLazyValidate
+    // buyer
+    BuyerInfo memory buyerInfo
   ) public payable {
-    if (orderRecord[buyLazyValidate.hashValue]) {
-      revert TattoMarket_There_Is_Already_Record();
-    }
-
-    if (!ITattoRole(tattoRole).isBack(singerAddress)) {
-      revert TattoMarket_Is_Not_Node();
-    }
-
     //verify
-    _validateBuyLazySignature(
-      singerAddress,
+    _validatePaySignature(
       msg.sender,
-      price,
-      lazyNFTInfo,
-      buyLazyValidate
+      buyerInfo.price,
+      buyerInfo.payHash,
+      buyerInfo.paySignature
     );
 
     //lazymint for buyer
-    uint256 mintedTokenId = ITattoCollection(lazyNFTInfo.collectionAddress)
-      .orderMint(
-        lazyNFTInfo.hashValue,
-        lazyNFTInfo.creatorAddress,
-        msg.sender,
-        lazyNFTInfo.ipfsHash
-      );
+    ITattoCollection(lazyNFTInfo.collectionAddress).lazyMint(
+      lazyNFTInfo.creatorAddress,
+      msg.sender,
+      lazyNFTInfo.ipfsHash,
+      lazyNFTInfo.mintHash,
+      lazyNFTInfo.mintSignature
+    );
 
     //transfer eth to seller
     uint256 buyerBalance = ITattoCurrency(currencyControlAddress).balanceOf(
       msg.sender
     );
 
-    if (price > buyerBalance) {
+    if (buyerInfo.price > buyerBalance) {
       revert TattoMarket_Price_Is_Larger_Than_BalanceOf();
     }
 
     ITattoCurrency(currencyControlAddress).reduceCurrencyFrom(
       msg.sender,
-      (protocolPercent * price) / 100
+      (protocolPercent * buyerInfo.price) / 100
     );
 
     ITattoCurrency(currencyControlAddress).transferETHFrom(
       msg.sender,
       lazyNFTInfo.creatorAddress,
-      ((100 - protocolPercent) * price) / 100
+      ((100 - protocolPercent) * buyerInfo.price) / 100
     );
 
-    //hash keep
-    orderRecord[buyLazyValidate.hashValue] = true;
-
-    emit BuyLazyNFT(mintedTokenId);
+    emit BuyLazyNFT();
   }
 
-  //msg.sender이 구매자
   function buyNFT(
-    address singerAddress,
-    uint256 price,
+    //seller
     NFTInfo memory nftInfo,
-    ValidateInfo memory buyValidate
+    // buyer
+    BuyerInfo memory buyerInfo
   ) public payable {
-    if (orderRecord[buyValidate.hashValue]) {
-      revert TattoMarket_There_Is_Already_Record();
-    }
-
-    if (!ITattoRole(tattoRole).isBack(singerAddress)) {
-      revert TattoMarket_Is_Not_Node();
-    }
-
     //verify
-    _validateBuySignature(
-      singerAddress,
+    _validatePaySignature(
       msg.sender,
-      price,
-      nftInfo,
-      buyValidate
+      buyerInfo.price,
+      buyerInfo.payHash,
+      buyerInfo.paySignature
     );
 
     // transfer nft to buyer
     IERC721(nftInfo.collectionAddress).transferFrom(
-      nftInfo.account,
+      nftInfo.holderAddress,
       msg.sender,
       nftInfo.tokenId
     );
 
+    // transfer eth to seller
     uint256 buyerBalance = ITattoCurrency(currencyControlAddress).balanceOf(
       msg.sender
     );
 
-    // transfer eth to seller
-    if (price > buyerBalance) {
+    if (buyerInfo.price > buyerBalance) {
       revert TattoMarket_Price_Is_Larger_Than_BalanceOf();
     }
 
     ITattoCurrency(currencyControlAddress).reduceCurrencyFrom(
       msg.sender,
-      (protocolPercent * price) / 100
+      (protocolPercent * buyerInfo.price) / 100
     );
 
     ITattoCurrency(currencyControlAddress).transferETHFrom(
       msg.sender,
-      nftInfo.account,
-      ((100 - protocolPercent) * price) / 100
+      nftInfo.holderAddress,
+      ((100 - protocolPercent) * buyerInfo.price) / 100
     );
-
-    //hash keep
-    orderRecord[buyValidate.hashValue] = true;
 
     emit BuyNFT();
   }
 
-  function _validateBuyLazySignature(
-    address singerAddress,
+  // 본인이 구매한것인이 그 가격에 대해 서명했는지를 verify
+  function _validatePaySignature(
     address buyer,
     uint256 price,
-    LazyNFTInfo memory nftInfo,
-    ValidateInfo memory buyLazyValidate
+    bytes32 payHash,
+    bytes memory paySignature
   ) internal pure {
     bytes32 calculatedHash = keccak256(
-      abi.encodePacked(
-        //buyer
-        uint256(uint160(buyer)),
-        price,
-        uint256(uint160(nftInfo.collectionAddress)),
-        uint256(uint160(nftInfo.creatorAddress)),
-        nftInfo.ipfsHash
-      )
+      abi.encodePacked(uint256(uint160(buyer)), price)
     );
     bytes32 calculatedOrigin = keccak256(
       abi.encodePacked(
@@ -195,50 +159,12 @@ contract TattoMarket {
         uint256(calculatedHash)
       )
     );
-    address recoveredSigner = calculatedOrigin.recover(
-      buyLazyValidate.signature
-    );
+    address recoveredSigner = calculatedOrigin.recover(paySignature);
 
-    if (calculatedHash != buyLazyValidate.hashValue) {
+    if (calculatedHash != payHash) {
       revert TattoMarket_Hash_Does_Not_Match();
     }
-    if (recoveredSigner != singerAddress) {
-      revert TattoMarket_Signer_Address_Does_Not_Match();
-    }
-  }
-
-  function _validateBuySignature(
-    address singerAddress,
-    address buyer,
-    uint256 price,
-    NFTInfo memory nftInfo,
-    ValidateInfo memory buyValidate
-  ) internal pure {
-    bytes32 calculatedHash = keccak256(
-      abi.encodePacked(
-        //buyer
-        uint256(uint160(buyer)),
-        price,
-        // NFT
-        uint256(uint160(nftInfo.account)),
-        uint256(uint160(nftInfo.collectionAddress)),
-        nftInfo.tokenId
-      )
-    );
-    bytes32 calculatedOrigin = keccak256(
-      abi.encodePacked(
-        //ethereum signature prefix
-        "\x19Ethereum Signed Message:\n32",
-        //Orderer
-        uint256(calculatedHash)
-      )
-    );
-    address recoveredSigner = calculatedOrigin.recover(buyValidate.signature);
-
-    if (calculatedHash != buyValidate.hashValue) {
-      revert TattoMarket_Hash_Does_Not_Match();
-    }
-    if (recoveredSigner != singerAddress) {
+    if (recoveredSigner != buyer) {
       revert TattoMarket_Signer_Address_Does_Not_Match();
     }
   }

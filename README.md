@@ -1,13 +1,25 @@
 ## blockend
 
 간단하게 구현하기 위해 자체 collection 기능 제거
-collection 내부에서만 거래가능하도록 구현
+
+hash를 keep하는 이유는 같은 hash로 민팅을 방지하기 위해서 = 동일한 ipfs hash로 민팅을 하면 안되므로
 
 기본적으로 lazyminting을 지원
 
+### Market
+
+buyLazyNFT
+buyer가 signer
+buyer한테 바로 민팅을 해주는 방식으로 트랜잭션 최소화 = seller(creator)는 자신이 소유한 적이 없게됨
+
+buyNFT
+buyer가 signer
+
 거래 수수료 : 2퍼
 
-TODO: 각 컨트랙트에 대한 간단한 설명
+### collection
+
+create할때 creator가 signer, 추후에 민팅/거래시 검증
 
 ## Quick setup
 
