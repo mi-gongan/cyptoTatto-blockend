@@ -80,7 +80,7 @@ create할때 creator가 signer, 추후에 민팅/거래시 검증
 ## deploy address
 
 admin address : "0xE976893Bf88F6CC81ae942cE9531fBebd8530D81"
-TattoRole address : "0x94476c2E4813490404D79056B8127104e2Fa00ad"
-TattoCurrency address : "0xA9fe913C2B58Ecb979382212c2DaB05012163153"
-TattoMarket address : 0x63A339D0C4a1fE38abBB182F778d04CD30087330
-TattoCollection address : "0x26ABac55dE5cED6608E742aed540215dCb576301"
+TattoRole address : "0x87974cb4E05f102A9527F2f185Cc8641D548bEA5"
+TattoCurrency address : "0xd701c4C2d29660b8Dd91ca1254A988Ac1316F2c3"
+TattoMarket address : 0x0DcC01a5d496A6c5F58b3CDe335cE861795913C3
+TattoCollection address : "0x48501804b332d642c4b14580574e26A949A3D2c1"
