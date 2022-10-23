@@ -39,10 +39,6 @@ contract TattoRole {
     return backAddress;
   }
 
-  function setAdminAddress(address _admin) public onlyAdmin {
-    adminAddress = _admin;
-  }
-
   function setMarketAddress(address _market) public onlyAdmin {
     marketAddress = _market;
   }
