@@ -10,7 +10,7 @@ describe("market", function () {
   const price = ethers.utils.parseEther("0.5");
   const protocolFee = ethers.utils.parseEther(`0.01`);
   const sellerFee = ethers.utils.parseEther(`0.49`);
-  const random = Math.floor(Math.random() * 100);
+  const salt = Math.floor(Math.random() * 100);
   async function deployMarket() {
     const [admin, seller, buyer, back] = await ethers.getSigners();
 
@@ -71,7 +71,7 @@ describe("market", function () {
     const payHashValue = payHash(buyer.address, price);
     const paySignature = await buyer.signMessage(arrayify(payHashValue));
 
-    const randomHere = random;
+    const randomHere = salt;
 
     const tradeHashValue = tradeHash(
       TattoCollection.address,
@@ -138,7 +138,7 @@ describe("market", function () {
     const payHashValue = payHash(buyer.address, price);
     const paySignature = await buyer.signMessage(arrayify(payHashValue));
 
-    const randomHere = random;
+    const randomHere = salt;
 
     const tradeHashValue = tradeHash(
       TattoCollection.address,

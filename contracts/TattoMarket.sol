@@ -224,7 +224,7 @@ contract TattoMarket {
     address sellerAddress,
     address buyerAddress,
     uint256 price,
-    uint256 random,
+    uint256 salt,
     address backAddress,
     bytes32 tradeHash,
     bytes memory tradeSignature
@@ -235,7 +235,7 @@ contract TattoMarket {
         uint256(uint160(sellerAddress)),
         uint256(uint160(buyerAddress)),
         uint256(price),
-        uint256(random)
+        uint256(salt)
       )
     );
     bytes32 calculatedOrigin = keccak256(
